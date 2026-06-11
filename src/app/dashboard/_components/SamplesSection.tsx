@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowUpRight } from "lucide-react";
 import { createSampleWorkflowAction } from "../actions";
@@ -15,8 +15,12 @@ export interface SampleItem {
 export default function SamplesSection({ samples }: { samples: SampleItem[] }) {
   const router = useRouter();
   const [isPending, startActionTransition] = useTransition();
+  // Which template was clicked — the spinner belongs to that card only,
+  // while isPending still disables the whole grid against double imports.
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const handleImportSample = (sampleId: string) => {
+    setPendingId(sampleId);
     startActionTransition(async () => {
       const result = await createSampleWorkflowAction(sampleId);
       if ("error" in result) {
@@ -40,7 +44,7 @@ export default function SamplesSection({ samples }: { samples: SampleItem[] }) {
             key={sample.id}
             onClick={() => handleImportSample(sample.id)}
             disabled={isPending}
-            className="group relative text-left rounded-xl border border-gray-200 bg-white overflow-hidden hover:border-violet-300 hover:shadow-[0_4px_16px_rgba(124,58,237,0.08)] transition-all disabled:opacity-60"
+            className="group relative text-left rounded-xl border border-gray-200 bg-white overflow-hidden cursor-pointer hover:border-violet-300 hover:shadow-[0_4px_16px_rgba(124,58,237,0.08)] transition-all disabled:opacity-60 disabled:cursor-default"
           >
             <div className="h-28 border-b border-gray-100">
               <GraphPreview seed={sample.id} />
@@ -50,7 +54,7 @@ export default function SamplesSection({ samples }: { samples: SampleItem[] }) {
                 <h3 className="text-[13.5px] font-semibold text-gray-900 truncate">
                   {sample.name}
                 </h3>
-                {isPending ? (
+                {isPending && pendingId === sample.id ? (
                   <Loader2 size={14} className="shrink-0 text-violet-500 animate-spin" />
                 ) : (
                   <ArrowUpRight
