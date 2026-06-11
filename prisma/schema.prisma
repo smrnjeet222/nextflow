@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Workflow {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @default("Untitled Workflow")
+  nodes     Json     // React Flow Node[] serialized
+  edges     Json     // React Flow Edge[] serialized
+  viewport  Json?    // { x: number, y: number, zoom: number }
+  status    String   @default("idle")  // idle | running | completed | failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs      WorkflowRun[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model WorkflowRun {
+  id          String    @id @default(cuid())
+  workflowId  String
+  workflow    Workflow   @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId      String
+  status      String    @default("running")  // pending | running | success | failed | partial
+  scope       String    // full | partial | single
+  targetNodes Json?     // node IDs if partial/single execution
+  triggerRunId String?  // parent workflow-executor Trigger.dev run ID (realtime subscription)
+  duration    Int?      // total duration in ms
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  nodeRuns    NodeRun[]
+
+  @@index([workflowId])
+  @@index([userId])
+  @@index([startedAt])
+}
+
+model NodeRun {
+  id           String    @id @default(cuid())
+  runId        String
+  run          WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  nodeId       String    // React Flow node ID
+  nodeName     String
+  nodeType     String    // request-inputs | crop-image | gemini | response
+  status       String    @default("pending")  // pending | running | success | failed
+  inputs       Json?     // snapshot of inputs used
+  output       Json?     // result data
+  error        String?
+  duration     Int?      // ms
+  triggerRunId String?   // Trigger.dev run ID for realtime tracking
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  @@index([runId])
+  @@index([nodeId])
+}

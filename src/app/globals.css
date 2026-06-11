@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --canvas-bg: #f7f7f8;
+  --border-color: #e5e7eb;
+  --accent: #7c3aed; /* violet-600 — Galaxy.ai purple */
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Pulsating glow for executing nodes (purple, per reference) */
+@keyframes executionGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 4px 2px rgba(124, 58, 237, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-color: #8b5cf6;
+  }
+  50% {
+    box-shadow: 0 0 18px 7px rgba(124, 58, 237, 0.45), 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-color: #7c3aed;
+  }
+}
+
+.node-executing {
+  animation: executionGlow 1.5s ease-in-out infinite;
+  border-color: #8b5cf6 !important;
+}
+
+/* Animated purple edges */
+@keyframes edgeDash {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+.nextflow-edge-animated {
+  stroke-dasharray: 6 4;
+  animation: edgeDash 0.8s linear infinite;
+}
+
+/* React Flow custom styles */
+.react-flow__background {
+  background-color: var(--canvas-bg);
+}
+
+.react-flow__edge-path {
+  stroke-width: 2.5;
+  transition: stroke 0.3s, stroke-width 0.3s;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3.5;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 3.5;
+}
+
+/* React Flow custom handle style overrides */
+.react-flow__handle {
+  width: 10px !important;
+  height: 10px !important;
+  border-width: 2px !important;
+  background-color: #ffffff !important;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.3);
+}
+
+.react-flow__handle-connecting {
+  background-color: #7c3aed !important;
+}
+
+.react-flow__handle-valid {
+  background-color: #22c55e !important;
+}
