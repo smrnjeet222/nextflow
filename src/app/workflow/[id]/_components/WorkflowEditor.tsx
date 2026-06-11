@@ -5,6 +5,8 @@ import { ReactFlowProvider, Viewport } from "@xyflow/react";
 
 import { useFlowStore } from "@/stores/flowStore";
 import { useWorkflowRun } from "@/hooks/useWorkflowRun";
+import { useAutosave } from "@/hooks/useAutosave";
+import { useRenameWorkflowMutation } from "@/lib/queries";
 import { WorkflowNode, WorkflowEdge } from "@/types/workflow";
 import { WorkflowRunDetail } from "@/types/execution";
 import TopBar from "./TopBar";
@@ -29,22 +31,17 @@ export default function WorkflowEditor({
   initialViewport,
   initialRuns,
 }: WorkflowEditorProps) {
-  const nodes = useFlowStore((s) => s.nodes);
-  const edges = useFlowStore((s) => s.edges);
-  const viewport = useFlowStore((s) => s.viewport);
   const loadWorkflow = useFlowStore((s) => s.loadWorkflow);
 
   const [workflowName, setWorkflowName] = useState(initialName);
-  const [isSaving, setIsSaving] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
 
   // Run lifecycle lives entirely in the runStore FSM; this hook resumes an
   // in-flight run from the server snapshot and drives the run-detail poll.
   const { phase } = useWorkflowRun(workflowId, initialRuns);
-
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const hydratedRef = useRef(false);
+  const isSaving = useAutosave(workflowId);
+  const renameMutation = useRenameWorkflowMutation(workflowId);
 
   // Hydrate the store once from server-fetched data; the canvas mounts only
   // afterwards so it picks up the persisted viewport on its first render.
@@ -53,52 +50,14 @@ export default function WorkflowEditor({
     const { initialNodes, initialEdges, initialViewport } = initialGraphRef.current;
     loadWorkflow(initialNodes, initialEdges, initialViewport);
     const raf = requestAnimationFrame(() => setCanvasReady(true));
-    // Allow autosave only after hydration has rendered
-    const t = setTimeout(() => {
-      hydratedRef.current = true;
-    }, 500);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(t);
-    };
+    return () => cancelAnimationFrame(raf);
   }, [workflowId, loadWorkflow]);
 
-  // Debounced autosave of graph + viewport
-  useEffect(() => {
-    if (!hydratedRef.current) return;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-
-    setIsSaving(true);
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        await fetch(`/api/workflows/${workflowId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nodes, edges, viewport }),
-        });
-      } catch (err) {
-        console.error("Failed to auto-save workflow:", err);
-      } finally {
-        setIsSaving(false);
-      }
-    }, 1200);
-
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    };
-  }, [nodes, edges, viewport, workflowId]);
-
-  const handleRenameWorkflow = async (newName: string) => {
+  const handleRenameWorkflow = (newName: string) => {
     setWorkflowName(newName);
-    try {
-      await fetch(`/api/workflows/${workflowId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName }),
-      });
-    } catch (err) {
-      console.error("Failed to rename workflow:", err);
-    }
+    renameMutation.mutate(newName, {
+      onError: (err) => console.error("Failed to rename workflow:", err),
+    });
   };
 
   return (
