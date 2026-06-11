@@ -4,7 +4,7 @@ import { prismaExtension } from "@trigger.dev/build/extensions/prisma";
 
 export default defineConfig({
   project: "proj_zsmlbmrmpjbggjvxrqio",
-  runtime: "node",
+  runtime: "node-22",
   logLevel: "log",
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
   // See https://trigger.dev/docs/runs/max-duration
