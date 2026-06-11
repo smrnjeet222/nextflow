@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useOptimistic, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import {
@@ -45,19 +45,39 @@ export default function DashboardShell({
   samples: SampleItem[];
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, startActionTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Rename/delete paint instantly; the canonical list from the server action's
+  // revalidatePath reconciles (and reverts on failure) when the transition ends.
+  const [optimisticWorkflows, applyOptimistic] = useOptimistic(
+    workflows,
+    (
+      current: WorkflowItem[],
+      action: { type: "rename"; id: string; name: string } | { type: "delete"; id: string }
+    ) => {
+      switch (action.type) {
+        case "rename":
+          return current.map((wf) =>
+            wf.id === action.id ? { ...wf, name: action.name } : wf
+          );
+        case "delete":
+          return current.filter((wf) => wf.id !== action.id);
+      }
+    }
+  );
 
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameName, setRenameName] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Poll for status updates whenever any workflow is "running"
+  // Poll for status updates whenever any workflow is "running". The global
+  // startTransition keeps the periodic refresh from flashing pending UI.
   useEffect(() => {
     const hasRunning = workflows.some((wf) => wf.status === "running");
     const interval = setInterval(
       () => {
-        router.refresh();
+        startTransition(() => router.refresh());
       },
       hasRunning ? 3000 : 10000
     );
@@ -65,25 +85,31 @@ export default function DashboardShell({
     return () => clearInterval(interval);
   }, [workflows, router]);
 
-  const handleCreate = () => startTransition(() => createWorkflowAction());
+  const handleCreate = () => startActionTransition(() => createWorkflowAction());
 
   const handleRename = () => {
     if (!renameId || !renameName.trim()) return;
     const payload = { id: renameId, name: renameName.trim() };
     setRenameId(null);
     setRenameName("");
-    startTransition(() => renameWorkflowAction(payload));
+    startActionTransition(async () => {
+      applyOptimistic({ type: "rename", id: payload.id, name: payload.name });
+      await renameWorkflowAction(payload);
+    });
   };
 
   const handleDelete = () => {
     if (!deleteId) return;
     const id = deleteId;
     setDeleteId(null);
-    startTransition(() => deleteWorkflowAction(id));
+    startActionTransition(async () => {
+      applyOptimistic({ type: "delete", id });
+      await deleteWorkflowAction(id);
+    });
   };
 
   const handleImportSample = (sampleId: string) => {
-    startTransition(async () => {
+    startActionTransition(async () => {
       const result = await createSampleWorkflowAction(sampleId);
       if ("error" in result) {
         alert(`Failed to import sample: ${result.error}`);
@@ -102,7 +128,7 @@ export default function DashboardShell({
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
-        startTransition(async () => {
+        startActionTransition(async () => {
           const result = await importWorkflowAction(json);
           if ("error" in result) {
             alert(`Import failed: ${result.error}`);
@@ -117,7 +143,7 @@ export default function DashboardShell({
     reader.readAsText(file);
   };
 
-  const filteredWorkflows = workflows.filter((wf) =>
+  const filteredWorkflows = optimisticWorkflows.filter((wf) =>
     wf.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
