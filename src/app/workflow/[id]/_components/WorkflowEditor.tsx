@@ -6,6 +6,7 @@ import { ReactFlowProvider, Viewport } from "@xyflow/react";
 import { useFlowStore } from "@/stores/flowStore";
 import { useWorkflowRun } from "@/hooks/useWorkflowRun";
 import { useAutosave } from "@/hooks/useAutosave";
+import { useUrlFlag } from "@/hooks/useUrlState";
 import { useRenameWorkflowMutation } from "@/lib/queries";
 import { WorkflowNode, WorkflowEdge } from "@/types/workflow";
 import { WorkflowRunDetail } from "@/types/execution";
@@ -73,7 +74,11 @@ export default function WorkflowEditor({
 
   const [workflowName, setWorkflowName] = useState(initialName);
   const [canvasReady, setCanvasReady] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(true);
+
+  // Panel visibility lives in the URL (?hide-runs=true) so it survives
+  // reloads and can be shared; missing param means open.
+  const [runsHidden, setRunsHidden] = useUrlFlag("hide-runs");
+  const historyOpen = !runsHidden;
 
   const isSaving = useAutosave(workflowId);
   const renameMutation = useRenameWorkflowMutation(workflowId);
@@ -95,7 +100,7 @@ export default function WorkflowEditor({
     });
   };
 
-  const toggleHistory = () => setHistoryOpen((open) => !open);
+  const toggleHistory = () => setRunsHidden(!runsHidden);
 
   return (
     <ReactFlowProvider>
