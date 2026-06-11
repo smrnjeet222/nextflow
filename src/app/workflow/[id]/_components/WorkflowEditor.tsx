@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use, Suspense } from "react";
 import { ReactFlowProvider, Viewport } from "@xyflow/react";
 
 import { useFlowStore } from "@/stores/flowStore";
@@ -12,6 +12,7 @@ import { WorkflowRunDetail } from "@/types/execution";
 import TopBar from "./TopBar";
 import FlowCanvas from "./FlowCanvas";
 import HistoryPanel from "./HistoryPanel";
+import HistoryPanelSkeleton from "./HistoryPanelSkeleton";
 import RealtimeRunMonitor from "./RealtimeRunMonitor";
 
 interface WorkflowEditorProps {
@@ -20,7 +21,44 @@ interface WorkflowEditorProps {
   initialNodes: WorkflowNode[];
   initialEdges: WorkflowEdge[];
   initialViewport?: Viewport;
-  initialRuns: WorkflowRunDetail[];
+  initialRunsPromise: Promise<WorkflowRunDetail[]>;
+}
+
+/**
+ * Everything that depends on the run history lives behind this component:
+ * `use()` suspends until the server finishes streaming the runs, while the
+ * canvas and top bar above stay interactive the whole time.
+ */
+function RunLayer({
+  workflowId,
+  initialRunsPromise,
+  isOpen,
+  onToggle,
+}: {
+  workflowId: string;
+  initialRunsPromise: Promise<WorkflowRunDetail[]>;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const initialRuns = use(initialRunsPromise);
+
+  // Run lifecycle lives entirely in the runStore FSM; this hook resumes an
+  // in-flight run from the server snapshot and drives the run-detail poll.
+  const { phase } = useWorkflowRun(workflowId, initialRuns);
+
+  return (
+    <>
+      {phase.name === "monitoring" && phase.token && phase.triggerRunId && (
+        <RealtimeRunMonitor triggerRunId={phase.triggerRunId} accessToken={phase.token} />
+      )}
+      <HistoryPanel
+        isOpen={isOpen}
+        onToggle={onToggle}
+        workflowId={workflowId}
+        initialRuns={initialRuns}
+      />
+    </>
+  );
 }
 
 export default function WorkflowEditor({
@@ -29,7 +67,7 @@ export default function WorkflowEditor({
   initialNodes,
   initialEdges,
   initialViewport,
-  initialRuns,
+  initialRunsPromise,
 }: WorkflowEditorProps) {
   const loadWorkflow = useFlowStore((s) => s.loadWorkflow);
 
@@ -37,9 +75,6 @@ export default function WorkflowEditor({
   const [canvasReady, setCanvasReady] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(true);
 
-  // Run lifecycle lives entirely in the runStore FSM; this hook resumes an
-  // in-flight run from the server snapshot and drives the run-detail poll.
-  const { phase } = useWorkflowRun(workflowId, initialRuns);
   const isSaving = useAutosave(workflowId);
   const renameMutation = useRenameWorkflowMutation(workflowId);
 
@@ -60,13 +95,11 @@ export default function WorkflowEditor({
     });
   };
 
+  const toggleHistory = () => setHistoryOpen((open) => !open);
+
   return (
     <ReactFlowProvider>
       <div className="flex flex-col h-screen w-screen overflow-hidden bg-gray-50">
-        {phase.name === "monitoring" && phase.token && phase.triggerRunId && (
-          <RealtimeRunMonitor triggerRunId={phase.triggerRunId} accessToken={phase.token} />
-        )}
-
         <div className="flex-1 flex overflow-hidden w-full relative">
           <div className="flex-1 relative">
             <TopBar
@@ -74,17 +107,21 @@ export default function WorkflowEditor({
               name={workflowName}
               isSaving={isSaving}
               onRename={handleRenameWorkflow}
-              onToggleHistory={() => setHistoryOpen((open) => !open)}
+              onToggleHistory={toggleHistory}
               isHistoryOpen={historyOpen}
             />
             {canvasReady ? <FlowCanvas /> : <div className="h-full w-full" />}
           </div>
-          <HistoryPanel
-            isOpen={historyOpen}
-            onToggle={() => setHistoryOpen((open) => !open)}
-            workflowId={workflowId}
-            initialRuns={initialRuns}
-          />
+          <Suspense
+            fallback={<HistoryPanelSkeleton isOpen={historyOpen} onToggle={toggleHistory} />}
+          >
+            <RunLayer
+              workflowId={workflowId}
+              initialRunsPromise={initialRunsPromise}
+              isOpen={historyOpen}
+              onToggle={toggleHistory}
+            />
+          </Suspense>
         </div>
       </div>
     </ReactFlowProvider>

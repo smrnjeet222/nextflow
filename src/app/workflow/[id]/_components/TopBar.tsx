@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   Play,
@@ -32,7 +32,6 @@ export default function TopBar({
   onToggleHistory,
   isHistoryOpen,
 }: TopBarProps) {
-  const router = useRouter();
   const { undo, redo, past, future, nodes } = useFlowStore();
   const isExecuting = useRunStore(selectIsRunActive);
 
@@ -68,13 +67,13 @@ export default function TopBar({
     <div className="absolute top-4 left-4 right-4 z-30 flex items-start justify-between pointer-events-none select-none">
       {/* Left — floating back + name pill */}
       <div className="pointer-events-auto flex items-center gap-2 bg-white rounded-full border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.08)] pl-2 pr-4 py-1.5">
-        <button
-          onClick={() => router.push("/dashboard")}
+        <Link
+          href="/dashboard"
           className="p-1.5 hover:bg-gray-100 rounded-full text-gray-500 hover:text-gray-900 transition-colors"
           title="Back to Dashboard"
         >
           <ArrowLeft size={16} />
-        </button>
+        </Link>
 
         <input
           type="text"

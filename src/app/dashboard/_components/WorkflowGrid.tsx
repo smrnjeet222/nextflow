@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect, useOptimistic, startTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -166,10 +167,10 @@ export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] 
           {filteredWorkflows.map((wf) => {
             const isRunning = wf.status === "running";
             return (
-              <div
+              <Link
                 key={wf.id}
-                onClick={() => router.push(`/workflow/${wf.id}`)}
-                className="group relative rounded-xl border border-gray-200 bg-white overflow-hidden hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all cursor-pointer"
+                href={`/workflow/${wf.id}`}
+                className="group relative block rounded-xl border border-gray-200 bg-white overflow-hidden hover:border-gray-300 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all cursor-pointer"
               >
                 <div className="relative h-28 border-b border-gray-100">
                   <GraphPreview seed={wf.id} />
@@ -184,6 +185,8 @@ export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] 
                   {/* Card menu */}
                   <button
                     onClick={(e) => {
+                      // preventDefault stops the wrapping Link from navigating
+                      e.preventDefault();
                       e.stopPropagation();
                       setMenuId(menuId === wf.id ? null : wf.id);
                     }}
@@ -201,13 +204,17 @@ export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] 
                       <div
                         className="fixed inset-0 z-10"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setMenuId(null);
                         }}
                       />
                       <div
                         className="absolute right-2 top-10 z-20 w-40 rounded-lg border border-gray-200 bg-white py-1 shadow-lg"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
                       >
                         <button
                           onClick={() => {
@@ -256,7 +263,7 @@ export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] 
                     Edited {timeAgo(wf.updatedAt)}
                   </p>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
