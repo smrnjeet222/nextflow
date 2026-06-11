@@ -9,5 +9,6 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return <ErrorState error={error} reset={reset} title="Failed to load your workflows" />;
+  // The workflows list has its own inline boundary; this catches everything else.
+  return <ErrorState error={error} reset={reset} title="Failed to load the dashboard" />;
 }

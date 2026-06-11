@@ -87,7 +87,7 @@ export default function FlowCanvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isConnectionValid}
-        onNodeDragStop={() => takeSnapshot()}
+        onNodeDragStart={() => takeSnapshot()}
         onMoveEnd={(_, vp) => setViewport(vp)}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Search, Scissors, Brain, Sparkles, X } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 import { useFlowStore } from "@/stores/flowStore";
@@ -82,11 +83,11 @@ export default function NodePicker({ isOpen, onClose }: NodePickerProps) {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50 p-4">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[100] p-4">
       <div
         ref={modalRef}
-        className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-xl flex flex-col max-h-[480px] overflow-hidden"
+        className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-3xl flex flex-col h-[640px] max-h-[85vh] overflow-hidden"
       >
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
@@ -120,7 +121,7 @@ export default function NodePicker({ isOpen, onClose }: NodePickerProps) {
         {/* Main Body */}
         <div className="flex-1 flex overflow-hidden">
           {/* Categories Sidebar */}
-          <div className="w-1/3 border-r border-gray-100 overflow-y-auto bg-gray-50/20 py-2">
+          <div className="w-1/4 border-r border-gray-100 overflow-y-auto bg-gray-50/20 py-2">
             {categories.map((cat) => {
               const isActive = activeCategory === cat;
               return (
@@ -140,7 +141,7 @@ export default function NodePicker({ isOpen, onClose }: NodePickerProps) {
           </div>
 
           {/* Nodes list */}
-          <div className="w-2/3 overflow-y-auto p-4 flex flex-col gap-2 bg-white">
+          <div className="w-3/4 overflow-y-auto p-4 flex flex-col gap-2 bg-white">
             {filteredOptions.length === 0 ? (
               <div className="text-center py-12 text-xs text-gray-400 font-semibold">
                 No nodes match your filters.
@@ -169,6 +170,7 @@ export default function NodePicker({ isOpen, onClose }: NodePickerProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

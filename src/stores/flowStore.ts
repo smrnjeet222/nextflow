@@ -49,11 +49,28 @@ function isPreplaced(node: WorkflowNode | undefined): boolean {
   return node?.data.type === "request-inputs" || node?.data.type === "response";
 }
 
+// Snapshots capture only persistent graph state. Transient React Flow flags
+// (selection, drag state, measured dimensions) are stripped so undo/redo
+// never burns a history entry on a selection-only diff.
 function cloneGraph(nodes: WorkflowNode[], edges: WorkflowEdge[]) {
   return {
-    nodes: structuredClone(nodes),
-    edges: structuredClone(edges),
+    nodes: structuredClone(nodes).map((n) => {
+      delete n.selected;
+      delete n.dragging;
+      delete n.measured;
+      return n;
+    }),
+    edges: structuredClone(edges).map((e) => {
+      delete e.selected;
+      return e;
+    }),
   };
+}
+
+type GraphSnapshot = ReturnType<typeof cloneGraph>;
+
+function graphsEqual(a: GraphSnapshot, b: GraphSnapshot): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -203,8 +220,14 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   takeSnapshot: () => {
     const { nodes, edges, past } = get();
+    const snapshot = cloneGraph(nodes, edges);
+
+    // Skip no-op snapshots (e.g. a drag that returned to its start position)
+    const last = past[past.length - 1];
+    if (last && graphsEqual(last, snapshot)) return;
+
     set({
-      past: [...past.slice(-MAX_HISTORY_LIMIT + 1), cloneGraph(nodes, edges)],
+      past: [...past.slice(-MAX_HISTORY_LIMIT + 1), snapshot],
       future: [],
     });
   },
@@ -213,10 +236,29 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const { past, future, nodes, edges } = get();
     if (past.length === 0) return;
 
-    const previous = past[past.length - 1];
+    const current = cloneGraph(nodes, edges);
+
+    // Drop stale entries identical to the current graph so a single press
+    // always produces a visible change (or empties the stack).
+    let remaining = past;
+    let previous: GraphSnapshot | null = null;
+    while (remaining.length > 0) {
+      const candidate = remaining[remaining.length - 1];
+      remaining = remaining.slice(0, -1);
+      if (!graphsEqual(candidate, current)) {
+        previous = candidate;
+        break;
+      }
+    }
+
+    if (!previous) {
+      set({ past: remaining });
+      return;
+    }
+
     set({
-      past: past.slice(0, -1),
-      future: [cloneGraph(nodes, edges), ...future],
+      past: remaining,
+      future: [current, ...future],
       nodes: previous.nodes,
       edges: previous.edges,
     });
@@ -226,10 +268,27 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const { past, future, nodes, edges } = get();
     if (future.length === 0) return;
 
-    const next = future[0];
+    const current = cloneGraph(nodes, edges);
+
+    let remaining = future;
+    let next: GraphSnapshot | null = null;
+    while (remaining.length > 0) {
+      const candidate = remaining[0];
+      remaining = remaining.slice(1);
+      if (!graphsEqual(candidate, current)) {
+        next = candidate;
+        break;
+      }
+    }
+
+    if (!next) {
+      set({ future: remaining });
+      return;
+    }
+
     set({
-      past: [...past, cloneGraph(nodes, edges)],
-      future: future.slice(1),
+      past: [...past, current],
+      future: remaining,
       nodes: next.nodes,
       edges: next.edges,
     });
