@@ -85,7 +85,6 @@ body {
   width: 10px !important;
   height: 10px !important;
   border-width: 2px !important;
-  background-color: #ffffff !important;
   transition: transform 0.2s, background-color 0.2s;
 }
 

@@ -94,7 +94,7 @@ export default function ResponseNode({ id, data, selected }: { id: string; data:
                 </a>
               </div>
             ) : (
-              <div className="w-full max-h-36 overflow-y-auto text-xs px-2.5 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-sans whitespace-pre-wrap leading-relaxed">
+              <div className="nodrag nowheel select-text cursor-text w-full max-h-36 overflow-y-auto text-xs px-2.5 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-sans whitespace-pre-wrap leading-relaxed">
                 {resultValue}
               </div>
             )

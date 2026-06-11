@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Position } from "@xyflow/react";
 import { Scissors, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { useFlowStore } from "@/stores/flowStore";
@@ -8,10 +9,61 @@ import TypedHandle from "./shared/TypedHandle";
 import { HandleDataType } from "@/lib/constants";
 import { NodeData } from "@/types/workflow";
 
+/**
+ * Number input that lets the user freely clear/retype while focused (a local
+ * draft string), and only parses + clamps back to a valid number on blur.
+ * Empty or invalid drafts revert to the last committed value.
+ */
+function NumberField({
+  label,
+  value,
+  min,
+  max,
+  disabled,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  disabled?: boolean;
+  onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    const parsed = parseInt(draft, 10);
+    if (!Number.isNaN(parsed)) {
+      onCommit(Math.min(max, Math.max(min, parsed)));
+    }
+    setDraft(null);
+  };
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</label>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={draft ?? value}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+        disabled={disabled}
+        className="nodrag w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+      />
+    </div>
+  );
+}
+
 export default function CropImageNode({ id, data, selected }: { id: string; data: NodeData; selected?: boolean }) {
   const { updateNodeData } = useFlowStore();
   const edges = useFlowStore((state) => state.edges);
-  
+
   // Check if there is an edge connected to our input image handle
   const isImageConnected = edges.some(
     (edge) => edge.target === id && edge.targetHandle === "imageUrl:image"
@@ -20,11 +72,10 @@ export default function CropImageNode({ id, data, selected }: { id: string; data
   const cropConfig = data.cropConfig || { x: 20, y: 20, width: 60, height: 60 };
 
   const handleConfigChange = (key: string, val: number) => {
-    const clamped = Math.min(100, Math.max(0, val));
     updateNodeData(id, {
       cropConfig: {
         ...cropConfig,
-        [key]: clamped,
+        [key]: val,
       },
     });
   };
@@ -74,54 +125,38 @@ export default function CropImageNode({ id, data, selected }: { id: string; data
 
         {/* Crop Numeric Parameters */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">X Pos (%)</label>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              value={cropConfig.x}
-              onChange={(e) => handleConfigChange("x", parseInt(e.target.value) || 0)}
-              disabled={isExecuting(data.status)}
-              className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Y Pos (%)</label>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              value={cropConfig.y}
-              onChange={(e) => handleConfigChange("y", parseInt(e.target.value) || 0)}
-              disabled={isExecuting(data.status)}
-              className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Width (%)</label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={cropConfig.width}
-              onChange={(e) => handleConfigChange("width", parseInt(e.target.value) || 1)}
-              disabled={isExecuting(data.status)}
-              className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Height (%)</label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={cropConfig.height}
-              onChange={(e) => handleConfigChange("height", parseInt(e.target.value) || 1)}
-              disabled={isExecuting(data.status)}
-              className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
+          <NumberField
+            label="X Pos (%)"
+            value={cropConfig.x}
+            min={-100}
+            max={100}
+            disabled={isExecuting(data.status)}
+            onCommit={(v) => handleConfigChange("x", v)}
+          />
+          <NumberField
+            label="Y Pos (%)"
+            value={cropConfig.y}
+            min={-100}
+            max={100}
+            disabled={isExecuting(data.status)}
+            onCommit={(v) => handleConfigChange("y", v)}
+          />
+          <NumberField
+            label="Width (%)"
+            value={cropConfig.width}
+            min={1}
+            max={100}
+            disabled={isExecuting(data.status)}
+            onCommit={(v) => handleConfigChange("width", v)}
+          />
+          <NumberField
+            label="Height (%)"
+            value={cropConfig.height}
+            min={1}
+            max={100}
+            disabled={isExecuting(data.status)}
+            onCommit={(v) => handleConfigChange("height", v)}
+          />
         </div>
 
         {/* Output handle and preview */}
