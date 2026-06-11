@@ -146,6 +146,28 @@ export const workflowExecutorTask = schemaTask({
   id: "workflow-executor",
   schema: ExecutorPayloadSchema,
   retry: { maxAttempts: 1 }, // a retried orchestrator would double-trigger child tasks
+  // Crash safety net: if the run throws anywhere (maxAttempts is 1, so this
+  // fires on the first failure), make sure the DB never reports a phantom
+  // in-flight run — otherwise workflow.status stays "running" forever.
+  onFailure: async ({ payload, error }) => {
+    const message = error instanceof Error ? error.message : String(error);
+    const completedAt = new Date();
+    await prisma.$transaction([
+      prisma.workflowRun.update({
+        where: { id: payload.runId },
+        data: { status: "failed", completedAt },
+      }),
+      prisma.nodeRun.updateMany({
+        where: { runId: payload.runId, status: { in: ["pending", "running"] } },
+        data: { status: "failed", error: `Executor crashed: ${message}`, completedAt },
+      }),
+      prisma.workflow.update({
+        where: { id: payload.workflowId },
+        data: { status: "idle" },
+      }),
+    ]);
+    logger.error("Executor failed; run marked failed", { runId: payload.runId, error: message });
+  },
   run: async (payload) => {
     const { runId, workflowId, scope } = payload;
     logger.info("Executor started", { workflowId, runId, scope, targets: payload.targetNodeIds });
