@@ -12,24 +12,27 @@ import {
 } from "lucide-react";
 import { STATUS_COLORS } from "@/lib/constants";
 import { WorkflowRunDetail } from "@/types/execution";
+import { useRunsQuery } from "@/lib/queries";
+import { useRunStore } from "@/stores/runStore";
 
 interface HistoryPanelProps {
   isOpen: boolean;
   onToggle: () => void;
-  activeRunId: string | null;
-  runs: WorkflowRunDetail[];
-  onRefresh: () => void;
-  isRefreshing?: boolean;
+  workflowId: string;
+  initialRuns: WorkflowRunDetail[];
 }
 
 export default function HistoryPanel({
   isOpen,
   onToggle,
-  activeRunId,
-  runs,
-  onRefresh,
-  isRefreshing = false,
+  workflowId,
+  initialRuns,
 }: HistoryPanelProps) {
+  const { data: runs, refetch, isFetching } = useRunsQuery(workflowId, initialRuns);
+  const activeRunId = useRunStore((s) =>
+    s.phase.name === "monitoring" || s.phase.name === "finishing" ? s.phase.runId : null
+  );
+
   // undefined = no manual choice yet → the active run auto-expands
   const [manualExpandId, setManualExpandId] = useState<string | null | undefined>(undefined);
   const [expandedNodeId, setExpandedNodeId] = useState<string | null>(null);
@@ -62,12 +65,12 @@ export default function HistoryPanel({
             </h2>
           </div>
           <button
-            onClick={onRefresh}
-            disabled={isRefreshing}
+            onClick={() => refetch()}
+            disabled={isFetching}
             className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             title="Refresh runs"
           >
-            <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={isFetching ? "animate-spin" : ""} />
           </button>
         </div>
 

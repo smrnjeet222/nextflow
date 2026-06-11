@@ -13,14 +13,13 @@ import {
   History,
 } from "lucide-react";
 import { useFlowStore } from "@/stores/flowStore";
+import { useRunStore, selectIsRunActive } from "@/stores/runStore";
 
 interface TopBarProps {
   workflowId: string;
   name: string;
   isSaving: boolean;
   onRename: (newName: string) => void;
-  onRun: (scope: "full" | "partial" | "single", nodeIds?: string[]) => void;
-  isExecuting: boolean;
   onToggleHistory: () => void;
   isHistoryOpen: boolean;
 }
@@ -30,13 +29,12 @@ export default function TopBar({
   name,
   isSaving,
   onRename,
-  onRun,
-  isExecuting,
   onToggleHistory,
   isHistoryOpen,
 }: TopBarProps) {
   const router = useRouter();
   const { undo, redo, past, future, nodes } = useFlowStore();
+  const isExecuting = useRunStore(selectIsRunActive);
 
   const [editedName, setEditedName] = useState(name);
 
@@ -61,7 +59,9 @@ export default function TopBar({
   };
 
   const runSelected = () => {
-    onRun(selectedNodeIds.length === 1 ? "single" : "partial", selectedNodeIds);
+    void useRunStore
+      .getState()
+      .startRun(selectedNodeIds.length === 1 ? "single" : "partial", selectedNodeIds);
   };
 
   return (
@@ -149,7 +149,7 @@ export default function TopBar({
 
         {/* Run full workflow */}
         <button
-          onClick={() => onRun("full")}
+          onClick={() => void useRunStore.getState().startRun("full")}
           disabled={isExecuting}
           className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-full text-xs font-semibold shadow-[0_4px_20px_rgba(0,0,0,0.12)] transition-all disabled:opacity-50 active:scale-[0.98]"
         >
