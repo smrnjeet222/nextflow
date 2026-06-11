@@ -29,8 +29,8 @@ export const RequestInputsFieldSchema = z.object({
 });
 
 export const CropConfigSchema = z.object({
-  x: z.number().min(0).max(100),
-  y: z.number().min(0).max(100),
+  x: z.number().min(-100).max(100),
+  y: z.number().min(-100).max(100),
   width: z.number().min(0).max(100),
   height: z.number().min(0).max(100),
 });

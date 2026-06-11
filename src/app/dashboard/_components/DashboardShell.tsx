@@ -9,7 +9,6 @@ import {
   Trash2,
   Edit2,
   Download,
-  FolderOpen,
   Upload,
   Workflow,
   Settings,

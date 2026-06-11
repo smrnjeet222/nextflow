@@ -6,6 +6,7 @@ import { Database, Plus, Trash2, Image as ImageIcon, FileText, Upload, X } from 
 import { useFlowStore } from "@/stores/flowStore";
 import NodeShell from "./shared/NodeShell";
 import TypedHandle from "./shared/TypedHandle";
+import AutoResizeTextarea from "./shared/AutoResizeTextarea";
 import { HandleDataType } from "@/lib/constants";
 import { RequestInputsField, NodeData } from "@/types/workflow";
 import {
@@ -132,30 +133,30 @@ export default function RequestInputsNode({ id, data, selected }: { id: string; 
                       type="text"
                       value={field.name}
                       onChange={(e) => handleFieldNameChange(field.id, e.target.value)}
-                      className="font-medium text-[10px] text-gray-700 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-24 px-0.5 truncate"
+                      className="nodrag font-medium text-[10px] text-gray-700 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-24 px-0.5 truncate"
                     />
                   </div>
 
                   <button
                     onClick={() => handleRemoveField(field.id)}
-                    className="text-gray-400 hover:text-red-500 rounded p-0.5 transition-colors"
+                    className="nodrag text-gray-400 hover:text-red-500 rounded p-0.5 transition-colors"
                   >
                     <Trash2 size={12} />
                   </button>
                 </div>
 
                 {/* Field Input Content */}
-                <div className="mr-4">
+                <div>
                   {field.type === "text" ? (
-                    <textarea
+                    <AutoResizeTextarea
                       value={field.value || ""}
                       onChange={(e) => handleFieldChange(field.id, e.target.value)}
                       placeholder="Enter prompt content..."
                       rows={2}
-                      className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none font-sans"
+                      className="w-full text-xs px-2 py-1.5 border border-gray-200 rounded bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-sans"
                     />
                   ) : field.value ? (
-                    <div className="relative border border-gray-200 rounded bg-white overflow-hidden h-24 flex items-center justify-center group/img">
+                    <div className="nodrag relative border border-gray-200 rounded bg-white overflow-hidden h-24 flex items-center justify-center group/img">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={field.value}
@@ -182,7 +183,7 @@ export default function RequestInputsNode({ id, data, selected }: { id: string; 
                       </div>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center gap-1.5 border border-dashed border-gray-300 rounded hover:border-violet-400 hover:bg-violet-50/10 cursor-pointer h-20 text-center transition-colors">
+                    <label className="nodrag flex flex-col items-center justify-center gap-1.5 border border-dashed border-gray-300 rounded hover:border-violet-400 hover:bg-violet-50/10 cursor-pointer h-20 text-center transition-colors">
                       <Upload size={14} className="text-gray-400" />
                       <span className="text-[10px] text-gray-500 font-medium">Upload Image</span>
                       <span className="text-[8px] text-gray-400">jpg, png, webp, gif</span>

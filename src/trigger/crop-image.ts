@@ -6,14 +6,13 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { imageSize } from "image-size";
-import { uploadBufferToTransloadit } from "../lib/transloadit";
 
 const execFilePromise = util.promisify(execFile);
 
 const CropImagePayloadSchema = z.object({
   imageUrl: z.string().min(1, "No image URL provided for cropping"),
-  x: z.number().min(0).max(100),
-  y: z.number().min(0).max(100),
+  x: z.number().min(-100).max(100),
+  y: z.number().min(-100).max(100),
   w: z.number().min(0).max(100),
   h: z.number().min(0).max(100),
 });
@@ -63,11 +62,17 @@ export const cropImageTask = schemaTask({
       throw new Error("Could not determine image dimensions");
     }
 
-    // Percentages → pixels, clamped so the crop rect stays inside the image
-    const cropW = Math.max(1, Math.round((payload.w / 100) * dimensions.width));
-    const cropH = Math.max(1, Math.round((payload.h / 100) * dimensions.height));
-    const cropX = Math.min(dimensions.width - cropW, Math.max(0, Math.round((payload.x / 100) * dimensions.width)));
-    const cropY = Math.min(dimensions.height - cropH, Math.max(0, Math.round((payload.y / 100) * dimensions.height)));
+    // Percentages → pixels. Position may be negative (rect starting off-canvas):
+    // the crop becomes the intersection of the requested rect and the image.
+    const desiredX = Math.round((payload.x / 100) * dimensions.width);
+    const desiredY = Math.round((payload.y / 100) * dimensions.height);
+    const desiredW = Math.round((payload.w / 100) * dimensions.width);
+    const desiredH = Math.round((payload.h / 100) * dimensions.height);
+
+    const cropX = Math.min(dimensions.width - 1, Math.max(0, desiredX));
+    const cropY = Math.min(dimensions.height - 1, Math.max(0, desiredY));
+    const cropW = Math.max(1, Math.min(dimensions.width, desiredX + desiredW) - cropX);
+    const cropH = Math.max(1, Math.min(dimensions.height, desiredY + desiredH) - cropY);
 
     const ext = mimeType.includes("png") ? ".png" : mimeType.includes("webp") ? ".webp" : ".jpg";
     const tempDir = os.tmpdir();
@@ -93,11 +98,12 @@ export const cropImageTask = schemaTask({
 
       const croppedBuffer = await fs.promises.readFile(outputPath);
 
-      // Prefer a CDN URL: keeps DB rows small and gives Gemini a fetchable URL.
-      const cdnUrl = await uploadBufferToTransloadit(croppedBuffer, `crop-${stamp}${ext}`, mimeType);
-      const outputImageUrl = cdnUrl ?? `data:${mimeType};base64,${croppedBuffer.toString("base64")}`;
+      // Data URL keeps the result permanently viewable: Transloadit assembly
+      // URLs live on temporary storage and expire after ~24h, breaking
+      // previews on reload. Crops are small enough to inline.
+      const outputImageUrl = `data:${mimeType};base64,${croppedBuffer.toString("base64")}`;
 
-      logger.info("Crop complete", { bytes: croppedBuffer.length, viaCdn: !!cdnUrl });
+      logger.info("Crop complete", { bytes: croppedBuffer.length });
       return { outputImageUrl };
     } finally {
       await Promise.allSettled([

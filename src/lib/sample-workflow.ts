@@ -12,15 +12,21 @@ export interface SampleWorkflow {
 export const SAMPLES: SampleWorkflow[] = [
   {
     id: "marketing-banner",
-    name: "AI Headphones Marketing Banner Campaign",
+    name: "Headphones Campaign",
     description: "Multi-step workflow that crops product images and uses Gemini to generate marketing copy and social media hooks.",
     nodes: [
       {
         id: "request-inputs-1",
         type: "request-inputs",
         dragging: false,
-        measured: { width: 288, height: 386 },
-        position: { x: -28.06, y: -101.03 },
+        measured: {
+          width: 288,
+          height: 418,
+        },
+        position: {
+          x: -44.17245474865996,
+          y: -425.1215847693906,
+        },
         selected: false,
         deletable: false,
         data: {
@@ -28,16 +34,16 @@ export const SAMPLES: SampleWorkflow[] = [
           label: "Request-Inputs",
           fields: [
             {
-              id: "text_field",
-              name: "text_field",
-              type: "text",
-              value: "Product: Wireless Bluetooth Headphones. Features: Noise cancellation, 30-hour battery, foldable design.",
-            },
-            {
               id: "image_field",
               name: "image_field",
               type: "image",
-              value: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
+              value: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop",
+            },
+            {
+              id: "text_field_1781153567902",
+              name: "text_field_2",
+              type: "text",
+              value: "Product: Wireless Bluetooth Headphones. Features: Noise cancellation, 30-hour batter, foldable design.",
             },
           ],
         },
@@ -46,34 +52,62 @@ export const SAMPLES: SampleWorkflow[] = [
         id: "crop-image-1",
         type: "crop-image",
         dragging: false,
-        measured: { width: 288, height: 445 },
-        position: { x: 405.66, y: -182.89 },
+        measured: {
+          width: 288,
+          height: 445,
+        },
+        position: {
+          x: 340.8548468790469,
+          y: -646.5232368693158,
+        },
         selected: false,
         data: {
           type: "crop-image",
           label: "Crop Image #1 (Tight Product)",
-          cropConfig: { x: 20, y: 20, width: 60, height: 60 },
+          cropConfig: {
+            x: 20,
+            y: 20,
+            width: 60,
+            height: 60,
+          },
         },
       },
       {
         id: "crop-image-2",
         type: "crop-image",
         dragging: false,
-        measured: { width: 288, height: 445 },
-        position: { x: 784.48, y: -226.16 },
+        measured: {
+          width: 288,
+          height: 372,
+        },
+        position: {
+          x: 670.9111566809729,
+          y: -644.7615882504326,
+        },
         selected: false,
         data: {
           type: "crop-image",
           label: "Crop Image #2 (Wide Banner)",
-          cropConfig: { x: 0, y: 0, width: 100, height: 50 },
+          cropConfig: {
+            x: 0,
+            y: 25,
+            width: 100,
+            height: 40,
+          },
         },
       },
       {
         id: "gemini-1",
         type: "gemini",
         dragging: false,
-        measured: { width: 288, height: 562 },
-        position: { x: 411.74, y: 394.95 },
+        measured: {
+          width: 288,
+          height: 529,
+        },
+        position: {
+          x: 337.2884016977594,
+          y: -171.7686981293561,
+        },
         selected: false,
         data: {
           type: "gemini",
@@ -89,8 +123,14 @@ export const SAMPLES: SampleWorkflow[] = [
         id: "gemini-2",
         type: "gemini",
         dragging: false,
-        measured: { width: 288, height: 562 },
-        position: { x: 800.94, y: 367.13 },
+        measured: {
+          width: 288,
+          height: 545,
+        },
+        position: {
+          x: 674.9864097630426,
+          y: -169.4416238808254,
+        },
         selected: false,
         data: {
           type: "gemini",
@@ -106,8 +146,14 @@ export const SAMPLES: SampleWorkflow[] = [
         id: "gemini-3",
         type: "gemini",
         dragging: false,
-        measured: { width: 288, height: 536 },
-        position: { x: 1222.12, y: 120.70 },
+        measured: {
+          width: 288,
+          height: 545,
+        },
+        position: {
+          x: 1070.575237497205,
+          y: -405.0212992800634,
+        },
         selected: false,
         data: {
           type: "gemini",
@@ -123,11 +169,20 @@ export const SAMPLES: SampleWorkflow[] = [
         id: "response-1",
         type: "response",
         dragging: false,
-        measured: { width: 288, height: 288 },
-        position: { x: 1601.95, y: 244.87 },
+        measured: {
+          width: 288,
+          height: 314,
+        },
+        position: {
+          x: 1410.274020819126,
+          y: -318.705557593103,
+        },
         selected: false,
         deletable: false,
-        data: { type: "response", label: "Response" },
+        data: {
+          type: "response",
+          label: "Response",
+        },
       },
     ] as WorkflowNode[],
     edges: [
@@ -138,34 +193,9 @@ export const SAMPLES: SampleWorkflow[] = [
         animated: false,
         sourceHandle: "image_field:image",
         targetHandle: "imageUrl:image",
-        data: { dataType: "image" },
-      },
-      {
-        id: "e-req-txt-gemini1",
-        source: "request-inputs-1",
-        target: "gemini-1",
-        animated: false,
-        sourceHandle: "text_field:text",
-        targetHandle: "prompt:text",
-        data: { dataType: "text" },
-      },
-      {
-        id: "e-gemini1-gemini2",
-        source: "gemini-1",
-        target: "gemini-2",
-        animated: false,
-        sourceHandle: "response:text",
-        targetHandle: "prompt:text",
-        data: { dataType: "text" },
-      },
-      {
-        id: "e-gemini2-gemini3",
-        source: "gemini-2",
-        target: "gemini-3",
-        animated: false,
-        sourceHandle: "response:text",
-        targetHandle: "prompt:text",
-        data: { dataType: "text" },
+        data: {
+          dataType: "image",
+        },
       },
       {
         id: "e-crop1-gemini3",
@@ -174,7 +204,9 @@ export const SAMPLES: SampleWorkflow[] = [
         animated: false,
         sourceHandle: "outputImageUrl:image",
         targetHandle: "imageUrls:image",
-        data: { dataType: "image" },
+        data: {
+          dataType: "image",
+        },
       },
       {
         id: "e-crop2-gemini3",
@@ -183,16 +215,9 @@ export const SAMPLES: SampleWorkflow[] = [
         animated: false,
         sourceHandle: "outputImageUrl:image",
         targetHandle: "imageUrls:image",
-        data: { dataType: "image" },
-      },
-      {
-        id: "e-gemini3-response",
-        source: "gemini-3",
-        target: "response-1",
-        animated: false,
-        sourceHandle: "response:text",
-        targetHandle: "result:any",
-        data: { dataType: "text" },
+        data: {
+          dataType: "image",
+        },
       },
       {
         id: "e-request-inputs-1-crop-image-1-1781138492445",
@@ -201,10 +226,61 @@ export const SAMPLES: SampleWorkflow[] = [
         animated: false,
         sourceHandle: "image_field:image",
         targetHandle: "imageUrl:image",
-        data: { dataType: "image" },
+        data: {
+          dataType: "image",
+        },
+      },
+      {
+        id: "e-gemini-3-response-1-1781152642858",
+        source: "gemini-3",
+        target: "response-1",
+        animated: false,
+        sourceHandle: "response:text",
+        targetHandle: "result:any",
+        data: {
+          dataType: "text",
+        },
+      },
+      {
+        id: "e-gemini-1-gemini-2-1781153511822",
+        source: "gemini-1",
+        target: "gemini-2",
+        animated: false,
+        sourceHandle: "response:text",
+        targetHandle: "prompt:text",
+        data: {
+          dataType: "text",
+        },
+      },
+      {
+        id: "e-gemini-2-gemini-3-1781153514077",
+        source: "gemini-2",
+        target: "gemini-3",
+        animated: false,
+        selected: false,
+        sourceHandle: "response:text",
+        targetHandle: "prompt:text",
+        data: {
+          dataType: "text",
+        },
+      },
+      {
+        id: "e-request-inputs-1-gemini-1-1781153643955",
+        source: "request-inputs-1",
+        target: "gemini-1",
+        animated: false,
+        sourceHandle: "text_field_1781153567902:text",
+        targetHandle: "prompt:text",
+        data: {
+          dataType: "text",
+        },
       },
     ] as WorkflowEdge[],
-    viewport: { x: 204.26, y: 326.68, zoom: 0.64 },
+    viewport: {
+      x: 233.6250705092889,
+      y: 624.6424148277301,
+      zoom: 0.6485827238686854,
+    },
   },
   {
     id: "basic-gemini",

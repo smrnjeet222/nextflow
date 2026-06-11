@@ -1,4 +1,4 @@
-import { Handle, HandleProps } from "@xyflow/react";
+import { Handle, HandleProps, useNodeConnections } from "@xyflow/react";
 import { HandleDataType, DATA_TYPE_COLORS } from "@/lib/constants";
 
 interface TypedHandleProps extends Omit<HandleProps, "id"> {
@@ -18,6 +18,9 @@ export default function TypedHandle({
 }: TypedHandleProps) {
   const colorConfig = DATA_TYPE_COLORS[dataType];
   const isTarget = type === "target";
+  // Solid fill once connected, hollow while free
+  const connections = useNodeConnections({ handleType: type, handleId: id });
+  const isConnected = connections.length > 0;
 
   return (
     <div className={`relative flex items-center ${isTarget ? "flex-row" : "flex-row-reverse"} gap-1.5 group`}>
@@ -28,7 +31,7 @@ export default function TypedHandle({
         isConnectable={isConnectable}
         style={{
           borderColor: colorConfig.hex,
-          backgroundColor: "#ffffff",
+          backgroundColor: isConnected ? colorConfig.hex : "#ffffff",
           width: "9px",
           height: "9px",
           borderWidth: "2px",
