@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { reapIfStale } from "@/lib/run-reaper";
 
 export async function GET(req: Request) {
   try {
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
       ],
     });
 
-    return NextResponse.json(runs);
+    return NextResponse.json(await Promise.all(runs.map(reapIfStale)));
   } catch (err) {
     console.error("[api/runs] GET Error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MoreVertical, Trash2, Edit2, Loader2, Play, X, Copy, Check } from "lucide-react";
 import { useFlowStore } from "@/stores/flowStore";
+import { useRunStore, selectIsRunActive } from "@/stores/runStore";
 
 interface NodeShellProps {
   id: string;
@@ -74,12 +75,12 @@ export default function NodeShell({
   const isExecuting = status === "running";
   const isQueued = status === "pending";
   const isRunnable = type === "crop-image" || type === "gemini";
-  // Any run in flight (optimistically set on click) disables all Run buttons
-  const isAnyRunActive = useFlowStore((s) => s.isExecuting);
+  // Any run in flight (phase != idle from the instant of the click) disables
+  // all Run buttons; extra clicks are also ignored by the FSM's START guard.
+  const isAnyRunActive = useRunStore(selectIsRunActive);
 
   const handleRunNode = () => {
-    const handler = useFlowStore.getState().runNodeHandler;
-    if (handler) handler(id);
+    void useRunStore.getState().startRun("single", [id]);
   };
 
   return (

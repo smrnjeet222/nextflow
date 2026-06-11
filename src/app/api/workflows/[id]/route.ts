@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { UpdateWorkflowSchema } from "@/validators/workflow";
+import { UpdateWorkflowSchema, WorkflowNodeInput } from "@/validators/workflow";
 
 export async function GET(
   req: Request,
@@ -62,21 +63,33 @@ export async function PATCH(
     const body = await req.json();
     const parsed = UpdateWorkflowSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+      return NextResponse.json({ error: z.flattenError(parsed.error) }, { status: 400 });
     }
 
-    // Clean up nodes before saving: ensure transient states like 'running' or 'pending'
-    // aren't persisted to the database. Terminal states and outputs are kept.
+    // Runtime fields (status/output/error/duration) are owned by the executor.
+    // Whatever the client sends for them is discarded and replaced with the
+    // current DB values, so a save racing a run completion can never clobber
+    // results. New nodes simply carry no runtime state yet.
+    const existingById = new Map(
+      (workflow.nodes as unknown as WorkflowNodeInput[]).map((n) => [n.id, n])
+    );
     const nodesToSave = parsed.data.nodes?.map((node) => {
-      const { status } = node.data;
-      if (status === "running" || status === "pending") {
-        return {
-          ...node,
-          data: { ...node.data, status: "idle" as const },
-          selected: false,
-        };
-      }
-      return { ...node, selected: false };
+      const { status, output, error, duration, ...data } = node.data;
+      void status; void output; void error; void duration;
+      const existing = existingById.get(node.id)?.data;
+      return {
+        ...node,
+        selected: false,
+        data: {
+          ...data,
+          ...(existing && {
+            status: existing.status,
+            output: existing.output,
+            error: existing.error,
+            duration: existing.duration,
+          }),
+        },
+      };
     });
 
     const updatedWorkflow = await prisma.workflow.update({

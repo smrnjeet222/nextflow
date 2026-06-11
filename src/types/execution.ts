@@ -21,6 +21,7 @@ export interface WorkflowRunDetail {
   status: "pending" | "running" | "success" | "failed" | "partial";
   scope: "full" | "partial" | "single";
   targetNodes?: unknown;
+  triggerRunId?: string | null;
   duration?: number | null;
   startedAt: string;
   completedAt?: string | null;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { tasks } from "@trigger.dev/sdk";
 import type { workflowExecutorTask } from "@/trigger/workflow-executor";
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
 
     const parsed = ExecuteRequestSchema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: z.flattenError(parsed.error) }, { status: 400 });
     }
 
     const { workflowId, scope, nodeIds } = parsed.data;

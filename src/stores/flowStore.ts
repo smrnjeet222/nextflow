@@ -23,15 +23,6 @@ interface FlowState {
   past: { nodes: WorkflowNode[]; edges: WorkflowEdge[] }[];
   future: { nodes: WorkflowNode[]; edges: WorkflowEdge[] }[];
 
-  /** Registered by the canvas page so node components can trigger single runs. */
-  runNodeHandler: ((nodeId: string) => void) | null;
-  setRunNodeHandler: (handler: ((nodeId: string) => void) | null) => void;
-
-  /** True from the instant a run is requested until it completes. Drives
-      optimistic UI (disabled Run buttons everywhere). */
-  isExecuting: boolean;
-  setIsExecuting: (executing: boolean) => void;
-
   setNodes: (nodes: WorkflowNode[]) => void;
   setEdges: (edges: WorkflowEdge[]) => void;
   setViewport: (viewport: Viewport) => void;
@@ -71,11 +62,6 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   viewport: { x: 0, y: 0, zoom: 1 },
   past: [],
   future: [],
-  runNodeHandler: null,
-  isExecuting: false,
-
-  setRunNodeHandler: (handler) => set({ runNodeHandler: handler }),
-  setIsExecuting: (executing) => set({ isExecuting: executing }),
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
+import { reapIfStale } from "@/lib/run-reaper";
 
 export async function GET(
   req: Request,
@@ -31,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }
 
-    return NextResponse.json(run);
+    return NextResponse.json(await reapIfStale(run));
   } catch (err) {
     console.error(`[api/runs/[runId]] GET Error:`, err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
