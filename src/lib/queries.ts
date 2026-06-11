@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Viewport } from "@xyflow/react";
+import { getQueryClient } from "@/lib/query-client";
 import { keys } from "@/lib/query-keys";
 import { useRunStore } from "@/stores/runStore";
 import { WorkflowRunDetail } from "@/types/execution";
@@ -44,6 +45,17 @@ export function useRunDetailQuery() {
     queryFn: async () => {
       const run = await fetchJson<WorkflowRunDetail>(`/api/runs/${runId}`);
       useRunStore.getState().ingestRunDetail(run);
+      // Mirror the fresh detail into the runs-list cache so the history
+      // panel tracks the active run live instead of waiting for the
+      // completion invalidation.
+      getQueryClient().setQueryData<WorkflowRunDetail[]>(
+        keys.runs(run.workflowId),
+        (list) =>
+          list &&
+          (list.some((r) => r.id === run.id)
+            ? list.map((r) => (r.id === run.id ? run : r))
+            : [run, ...list])
+      );
       return run;
     },
     enabled: runId !== null,

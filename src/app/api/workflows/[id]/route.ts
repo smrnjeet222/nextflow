@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { UpdateWorkflowSchema, WorkflowNodeInput } from "@/validators/workflow";
@@ -62,7 +63,7 @@ export async function PATCH(
     const body = await req.json();
     const parsed = UpdateWorkflowSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+      return NextResponse.json({ error: z.flattenError(parsed.error) }, { status: 400 });
     }
 
     // Runtime fields (status/output/error/duration) are owned by the executor.

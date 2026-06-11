@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { ImportWorkflowSchema, stripRuntimeNodeState } from "@/validators/workflow";
 
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
 
     const parsed = ImportWorkflowSchema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json({ error: z.flattenError(parsed.error) }, { status: 400 });
     }
 
     const newWorkflow = await prisma.workflow.create({

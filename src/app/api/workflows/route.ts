@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { CreateWorkflowSchema } from "@/validators/workflow";
 import { getDefaultWorkflowNodes } from "@/lib/default-workflow";
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = CreateWorkflowSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+      return NextResponse.json({ error: z.flattenError(parsed.error) }, { status: 400 });
     }
 
     // New canvases always open with Request-Inputs + Response pre-placed
