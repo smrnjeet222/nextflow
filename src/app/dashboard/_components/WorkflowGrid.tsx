@@ -41,7 +41,10 @@ function timeAgo(iso: string): string {
 
 export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] }) {
   const router = useRouter();
-  const [isPending, startActionTransition] = useTransition();
+  // Create gets its own transition: the empty-state button must not show a
+  // pending spinner while an unrelated rename/delete action is in flight.
+  const [isCreating, startCreateTransition] = useTransition();
+  const [, startActionTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState("");
   const [menuId, setMenuId] = useState<string | null>(null);
 
@@ -82,7 +85,7 @@ export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] 
     return () => clearInterval(interval);
   }, [workflows, router]);
 
-  const handleCreate = () => startActionTransition(() => createWorkflowAction());
+  const handleCreate = () => startCreateTransition(() => createWorkflowAction());
 
   const handleRename = () => {
     if (!renameId || !renameName.trim()) return;
@@ -149,10 +152,10 @@ export default function WorkflowGrid({ workflows }: { workflows: WorkflowItem[] 
             {!searchQuery && (
               <button
                 onClick={handleCreate}
-                disabled={isPending}
+                disabled={isCreating}
                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
               >
-                {isPending ? (
+                {isCreating ? (
                   <Loader2 size={15} className="animate-spin" />
                 ) : (
                   <Plus size={15} />
