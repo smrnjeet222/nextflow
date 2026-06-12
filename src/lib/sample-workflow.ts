@@ -31,7 +31,7 @@ export const SAMPLES: SampleWorkflow[] = [
         deletable: false,
         data: {
           type: "request-inputs",
-          label: "Request-Inputs",
+          label: "Inputs",
           fields: [
             {
               id: "image_field",

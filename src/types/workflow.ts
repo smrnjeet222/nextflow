@@ -18,6 +18,10 @@ export interface GeminiConfig {
   model: string;
   prompt: string;
   systemPrompt?: string;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  maxOutputTokens?: number;
 }
 
 export type NodeType = "request-inputs" | "crop-image" | "gemini" | "response";

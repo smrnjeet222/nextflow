@@ -31,7 +31,10 @@ interface FlowState {
   onConnect: (connection: Connection) => void;
   isConnectionValid: (connection: Connection | WorkflowEdge) => boolean;
 
-  addNode: (type: "crop-image" | "gemini", position: { x: number; y: number }) => void;
+  addNode: (
+    type: "crop-image" | "gemini" | "request-inputs" | "response",
+    position: { x: number; y: number }
+  ) => void;
   deleteNode: (nodeId: string) => void;
   updateNodeData: (nodeId: string, updates: Partial<NodeData>) => void;
 
@@ -45,8 +48,10 @@ interface FlowState {
 
 const MAX_HISTORY_LIMIT = 50;
 
+// Pre-placed nodes (the original Request-Inputs / Response pair) carry
+// `deletable: false`; picker-added copies of those types stay deletable.
 function isPreplaced(node: WorkflowNode | undefined): boolean {
-  return node?.data.type === "request-inputs" || node?.data.type === "response";
+  return node?.deletable === false;
 }
 
 // Snapshots capture only persistent graph state. Transient React Flow flags
@@ -165,22 +170,40 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const id = `${type}-${Date.now()}`;
     const count = nodes.filter((n) => n.data.type === type).length + 1;
 
-    const nodeData: NodeData =
-      type === "crop-image"
-        ? {
-            label: `Crop Image #${count}`,
-            type: "crop-image",
-            cropConfig: { x: 0, y: 0, width: 100, height: 100 },
-          }
-        : {
-            label: `Gemini 3.1 Pro${count > 1 ? ` #${count}` : ""}`,
-            type: "gemini",
-            geminiConfig: {
-              model: DEFAULT_GEMINI_MODEL,
-              prompt: "",
-              systemPrompt: "",
-            },
-          };
+    let nodeData: NodeData;
+    switch (type) {
+      case "crop-image":
+        nodeData = {
+          label: `Crop Image #${count}`,
+          type: "crop-image",
+          cropConfig: { x: 0, y: 0, width: 100, height: 100 },
+        };
+        break;
+      case "gemini":
+        nodeData = {
+          label: `Gemini 3.1 Pro${count > 1 ? ` #${count}` : ""}`,
+          type: "gemini",
+          geminiConfig: {
+            model: DEFAULT_GEMINI_MODEL,
+            prompt: "",
+            systemPrompt: "",
+          },
+        };
+        break;
+      case "request-inputs":
+        nodeData = {
+          label: `Inputs${count > 1 ? ` #${count}` : ""}`,
+          type: "request-inputs",
+          fields: [],
+        };
+        break;
+      case "response":
+        nodeData = {
+          label: `Response${count > 1 ? ` #${count}` : ""}`,
+          type: "response",
+        };
+        break;
+    }
 
     set({
       nodes: [...nodes, { id, type, position, data: nodeData }],

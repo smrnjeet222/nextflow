@@ -39,6 +39,10 @@ export const GeminiConfigSchema = z.object({
   model: z.string().min(1),
   prompt: z.string(),
   systemPrompt: z.string().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  topP: z.number().min(0).max(1).optional(),
+  topK: z.number().int().min(1).optional(),
+  maxOutputTokens: z.number().int().min(1).max(65536).optional(),
 });
 
 // Loose: React Flow stores extra runtime props (selected, measured, dragging…)

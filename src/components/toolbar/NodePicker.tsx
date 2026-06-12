@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Search, Scissors, Brain, Sparkles, X } from "lucide-react";
+import { Search, Scissors, Brain, Sparkles, X, Database, CheckCircle } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 import { useFlowStore } from "@/stores/flowStore";
 
@@ -12,7 +12,7 @@ interface NodePickerProps {
 }
 
 interface NodeOption {
-  id: "crop-image" | "gemini";
+  id: "crop-image" | "gemini" | "request-inputs" | "response";
   name: string;
   description: string;
   category: "Image" | "Video" | "Audio" | "Others";
@@ -42,6 +42,20 @@ export default function NodePicker({ isOpen, onClose }: NodePickerProps) {
   if (!isOpen) return null;
 
   const nodeOptions: NodeOption[] = [
+    {
+      id: "request-inputs",
+      name: "Request Inputs",
+      description: "Collect text and image inputs that feed the rest of the workflow.",
+      category: "Others",
+      icon: <Database className="text-amber-500" size={18} />,
+    },
+    {
+      id: "response",
+      name: "Response",
+      description: "Display the final output of a workflow branch.",
+      category: "Others",
+      icon: <CheckCircle className="text-green-500" size={18} />,
+    },
     {
       id: "crop-image",
       name: "Crop Image",
@@ -73,7 +87,7 @@ export default function NodePicker({ isOpen, onClose }: NodePickerProps) {
     return matchesSearch && matchesCategory;
   });
 
-  const handleSelectNode = (type: "crop-image" | "gemini") => {
+  const handleSelectNode = (type: NodeOption["id"]) => {
     // Drop the node at the visible canvas center
     const center = screenToFlowPosition({
       x: window.innerWidth / 2,

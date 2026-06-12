@@ -8,6 +8,10 @@ const GeminiPayloadSchema = z.object({
   prompt: z.string().min(1, "Prompt is required"),
   systemPrompt: z.string().optional(),
   imageUrls: z.array(z.string()).optional(), // Vision (URLs or base64 data URIs)
+  temperature: z.number().min(0).max(2).optional(),
+  topP: z.number().min(0).max(1).optional(),
+  topK: z.number().int().min(1).optional(),
+  maxOutputTokens: z.number().int().min(1).max(65536).optional(),
 });
 
 // Tried in order when the requested model isn't usable on the API key.
@@ -89,10 +93,21 @@ export const geminiLlmTask = schemaTask({
       if (part) parts.push(part);
     }
 
+    // Only include params the user actually set so model defaults apply otherwise
+    const generationConfig = Object.fromEntries(
+      Object.entries({
+        temperature: payload.temperature,
+        topP: payload.topP,
+        topK: payload.topK,
+        maxOutputTokens: payload.maxOutputTokens,
+      }).filter(([, v]) => v !== undefined)
+    );
+
     logger.info("Calling Gemini", {
       model: payload.model,
       promptLength: payload.prompt.length,
       imageCount: parts.length - 1,
+      generationConfig,
     });
 
     const candidates = [payload.model, ...MODEL_FALLBACKS.filter((m) => m !== payload.model)];
@@ -106,7 +121,10 @@ export const geminiLlmTask = schemaTask({
 
       for (let attempt = 0; attempt <= MAX_RATE_LIMIT_WAITS; attempt++) {
         try {
-          const result = await model.generateContent({ contents: [{ role: "user", parts }] });
+          const result = await model.generateContent({
+            contents: [{ role: "user", parts }],
+            ...(Object.keys(generationConfig).length > 0 ? { generationConfig } : {}),
+          });
           const responseText = result.response.text();
 
           if (modelName !== payload.model) {

@@ -1,17 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { Position } from "@xyflow/react";
-import { Brain, Sparkles } from "lucide-react";
+import { Brain, ChevronRight, RotateCcw, Settings2, Sparkles } from "lucide-react";
 import { useFlowStore } from "@/stores/flowStore";
 import NodeShell from "./shared/NodeShell";
 import TypedHandle from "./shared/TypedHandle";
 import AutoResizeTextarea from "./shared/AutoResizeTextarea";
 import { HandleDataType, GEMINI_MODELS, DEFAULT_GEMINI_MODEL } from "@/lib/constants";
-import { NodeData } from "@/types/workflow";
+import { GeminiConfig, NodeData } from "@/types/workflow";
+
+// Generation params surfaced in the Settings panel. Unset = Gemini model default.
+const GENERATION_PARAMS: {
+  key: keyof Pick<GeminiConfig, "temperature" | "topP" | "topK" | "maxOutputTokens">;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  fallback: number; // slider position before the user sets a value
+}[] = [
+  { key: "temperature", label: "Temperature", min: 0, max: 2, step: 0.1, fallback: 1 },
+  { key: "topP", label: "Top P", min: 0, max: 1, step: 0.05, fallback: 0.95 },
+  { key: "topK", label: "Top K", min: 1, max: 100, step: 1, fallback: 40 },
+  { key: "maxOutputTokens", label: "Max Tokens", min: 1, max: 8192, step: 1, fallback: 2048 },
+];
 
 export default function GeminiNode({ id, data, selected }: { id: string; data: NodeData; selected?: boolean }) {
   const { updateNodeData } = useFlowStore();
   const edges = useFlowStore((state) => state.edges);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Connection check states
   const isPromptConnected = edges.some(
@@ -40,6 +57,19 @@ export default function GeminiNode({ id, data, selected }: { id: string; data: N
       },
     });
   };
+
+  const handleParamChange = (key: keyof GeminiConfig, value: number | undefined) => {
+    updateNodeData(id, {
+      geminiConfig: {
+        ...geminiConfig,
+        [key]: value,
+      },
+    });
+  };
+
+  const setParamCount = GENERATION_PARAMS.filter(
+    (p) => geminiConfig[p.key] !== undefined
+  ).length;
 
   // Renders the model selection dropdown in the Node Header
   const ModelSelector = (
@@ -160,6 +190,77 @@ export default function GeminiNode({ id, data, selected }: { id: string; data: N
               {connectedImages.length}
             </span>
           </div>
+        </div>
+
+        {/* Generation Settings (collapsible) */}
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((open) => !open)}
+            className="nodrag flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider hover:text-gray-700 cursor-pointer w-fit"
+          >
+            <ChevronRight
+              size={12}
+              className={`transition-transform ${settingsOpen ? "rotate-90" : ""}`}
+            />
+            <Settings2 size={10} />
+            Settings
+            {setParamCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700 normal-case tracking-normal">
+                {setParamCount} set
+              </span>
+            )}
+          </button>
+
+          {settingsOpen && (
+            <div className="nodrag mt-1 px-2.5 py-2.5 border border-gray-200 rounded-lg bg-gray-50/50">
+              <div className="flex flex-col gap-2.5">
+                {GENERATION_PARAMS.map((param) => {
+                  const value = geminiConfig[param.key] as number | undefined;
+                  const isSet = value !== undefined;
+                  return (
+                    <div key={param.key} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-semibold text-gray-500">
+                          {param.label}
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`text-[10px] font-semibold tabular-nums ${
+                              isSet ? "text-blue-600" : "text-gray-400"
+                            }`}
+                          >
+                            {value ?? param.fallback}
+                          </span>
+                          {isSet && (
+                            <button
+                              type="button"
+                              onClick={() => handleParamChange(param.key, undefined)}
+                              title="Reset to model default"
+                              className="text-gray-400 hover:text-blue-600 cursor-pointer transition-colors"
+                            >
+                              <RotateCcw size={9} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min={param.min}
+                        max={param.max}
+                        step={param.step}
+                        value={value ?? param.fallback}
+                        onChange={(e) => handleParamChange(param.key, Number(e.target.value))}
+                        className={`w-full h-[3px] rounded-full appearance-none cursor-pointer ${
+                          isSet ? "bg-blue-200" : "bg-gray-200"
+                        } [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-sm [&::-moz-range-thumb]:w-2.5 [&::-moz-range-thumb]:h-2.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-blue-600 [&::-moz-range-thumb]:border-0`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Inline Response output */}

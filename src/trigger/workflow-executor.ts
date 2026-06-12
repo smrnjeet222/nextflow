@@ -133,6 +133,10 @@ function resolveNodeInputs(
         systemPrompt:
           (typeof systemConn === "string" && systemConn) || node.data.geminiConfig?.systemPrompt || undefined,
         imageUrls,
+        temperature: node.data.geminiConfig?.temperature,
+        topP: node.data.geminiConfig?.topP,
+        topK: node.data.geminiConfig?.topK,
+        maxOutputTokens: node.data.geminiConfig?.maxOutputTokens,
       };
     }
     case "response": {

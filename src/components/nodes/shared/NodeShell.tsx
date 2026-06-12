@@ -71,7 +71,11 @@ export default function NodeShell({
     setShowMenu(false);
   };
 
-  const isPreplaced = type === "request-inputs" || type === "response";
+  // Pre-placed nodes carry `deletable: false`; picker-added input/response
+  // nodes stay deletable and renamable.
+  const isPreplaced = useFlowStore(
+    (state) => state.nodes.find((n) => n.id === id)?.deletable === false
+  );
   const isExecuting = status === "running";
   const isQueued = status === "pending";
   const isRunnable = type === "crop-image" || type === "gemini";
